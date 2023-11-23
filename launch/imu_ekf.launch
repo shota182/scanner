@@ -9,13 +9,9 @@
   </node>
 
   <!-- robot localization -->
-  <node pkg="robot_localization" type="ekf_localization_node" name="ekf_se" clear_params="true" output="screen">
-    <!-- <rosparam command="load" file="/home/sskr3/catkin_ws/src/scanner/config/model1.yaml" /> -->
-    <param name="imu0" value="/imu/data_raw"/>
-    <rosparam param="imu0_config">[true,  true,  false,
-                                    false, false, true,
-                                    true,  false, false,
-                                    false, false, true,
-                                    false, false, false]</rosparam>
+  <node pkg="scanner" type="ekf_node" name="ekf_node" output="screen">
   </node>
+
+  <!-- rviz -->
+  <node pkg="rviz" type="rviz" name="rviz" args="-d /home/sskr3/catkin_ws/src/scanner/config/imu_ekf.rviz"/>
 </launch>

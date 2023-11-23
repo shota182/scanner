@@ -162,6 +162,7 @@ add_executable(csv_writer_node src/imu_savecsv.cpp)
 add_executable(imu_calibration_node src/imu_calibration.cpp)
 add_executable(key_publisher_node src/key.cpp)
 add_executable(imu_calibrated_node src/imu_calibrated.cpp)
+add_executable(ekf_node src/ekf.cpp)
 ####################################
 ####################################
 ####################################
@@ -219,6 +220,10 @@ target_link_libraries(key_publisher_node
   ${catkin_LIBRARIES}
 )
 target_link_libraries(imu_calibrated_node
+  ${catkin_LIBRARIES}
+  yaml-cpp
+)
+target_link_libraries(ekf_node
   ${catkin_LIBRARIES}
   yaml-cpp
 )
