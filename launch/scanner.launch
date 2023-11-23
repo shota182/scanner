@@ -1,0 +1,57 @@
+<launch>
+    <arg name="imu" default="true"/>
+    <arg name="imu_csv" default="false"/>
+    <arg name="cam" default="false"/>
+    <arg name="node_start_delay" default="3.0" />
+
+    <group if="$(arg imu)">
+        <!-- imu use -->
+        <arg name="port" default="/dev/ttyACM0" />
+        <arg name="frame_id" default="imu_link" />
+        <node pkg="rt_usb_9axisimu_driver" type="rt_usb_9axisimu_driver" name="rt_usb_9axisimu_driver" required="true" output="screen">
+            <param name="port" value="$(arg port)" />
+            <param name="frame_id" value="$(arg frame_id)" />
+        </node>
+
+        <!-- publish calibrated imu data -->
+        <node name="imu_calibrated_node" pkg="scanner" type="imu_calibrated_node">
+            <!-- <remap from="/imu/data_calibrated" to="/imu/data_"/> -->
+        </node>
+
+        <!-- madgwick filter for 9axis imu -->
+        <node name="imu_filter_node" pkg="imu_filter_madgwick" type="imu_filter_node">
+            <remap from="/imu/data_raw" to="/imu/data_calibrated"/>
+            <!-- <param name="remove_gravity_vector" value="true" /> -->
+        </node>
+
+        <!-- tf from "world" to "odom" about position of imu by integerate acceleration twice -->
+        <node name="imu_pose_node" pkg="scanner" type="imu_pose_node" launch-prefix="bash -c 'sleep $(arg node_start_delay); $0 $@' ">
+            <remap from="/imu_pose/imu/data" to="/imu/data"/>
+        </node>
+    </group>
+
+    <group if="$(arg imu_csv)">
+        <node name="csv_writer_node" pkg="scanner" type="csv_writer_node">
+            <param name="path" value=""/>
+        </node>
+    </group>
+
+    <group if="$(arg cam)">
+        <!-- camera use -->
+        <node name="capture_node" pkg="scanner" type="capture_node">
+            <param name="camera_device" value="/dev/video2"/>
+        </node>
+        <!-- laser binarization -->
+        <node name="laser_binarization_node" pkg="scanner" type="laser_binarization_node">
+        </node>
+        <!-- laser pointcloud publisher -->
+        <node name="laser_cloud_node" pkg="scanner" type="laser_cloud_node">
+        </node>
+        <node pkg="tf" type="static_transform_publisher" name="laser_transform" args=" 0 0 0 0 0 0 camera image 100" />
+    </group>
+
+    <!-- rviz -->
+    <node pkg="rviz" type="rviz" name="rviz" args="-d /home/sskr3/catkin_ws/src/scanner/config/imu_pose.rviz"/>
+
+    
+</launch>

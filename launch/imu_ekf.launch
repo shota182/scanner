@@ -1,0 +1,21 @@
+<!-- <?xml version="1.0" encoding="UTF-8"?> -->
+<launch>
+  <!-- imu use -->
+  <arg name="port" default="/dev/ttyACM0" />
+  <arg name="frame_id" default="imu_link" />
+  <node pkg="rt_usb_9axisimu_driver" type="rt_usb_9axisimu_driver" name="rt_usb_9axisimu_driver" required="true" output="screen">
+    <param name="port" value="$(arg port)" />
+    <param name="frame_id" value="$(arg frame_id)" />
+  </node>
+
+  <!-- robot localization -->
+  <node pkg="robot_localization" type="ekf_localization_node" name="ekf_se" clear_params="true" output="screen">
+    <!-- <rosparam command="load" file="/home/sskr3/catkin_ws/src/scanner/config/model1.yaml" /> -->
+    <param name="imu0" value="/imu/data_raw"/>
+    <rosparam param="imu0_config">[true,  true,  false,
+                                    false, false, true,
+                                    true,  false, false,
+                                    false, false, true,
+                                    false, false, false]</rosparam>
+  </node>
+</launch>
