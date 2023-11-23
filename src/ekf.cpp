@@ -8,9 +8,11 @@
 
 class ExtKalmanFilter {
 public:
-    ExtKalmanFilter() : imu_(nullptr), mag_(nullptr) {
+    ExtKalmanFilter() : {
         // initialization
         previous_timestamp_ = ros::Time::now();
+        imu_->header.stamp = 0;
+        mag_->header.stamp = 0;
         myu_observation_ = Eigen::Vector3d::Zero();
         Sigma_observation_ = Eigen::Matrix3d::Identity();
         R_ = Eigen::Matrix3d::Identity() * 0.01;
@@ -24,8 +26,7 @@ public:
 
     // Callback function for IMU data
     void imuCallback(const sensor_msgs::Imu::ConstPtr& imu_msg) {
-        if(imu_ == nullptr) imu_ = imu_msg;
-        else if(imu_->header.stamp < mag_->header.stamp) imu_ = imu_msg;
+        if(imu_->header.stamp < mag_->header.stamp) imu_ = imu_msg;
         ros::Time current_timestamp = imu_->header.stamp;
         dt_ = (current_timestamp - previous_timestamp_).toSec();
         previous_timestamp_ = current_timestamp;
@@ -34,8 +35,7 @@ public:
 
     // Callback function for magnetometer data
     void magCallback(const sensor_msgs::MagneticField::ConstPtr& mag_msg) {
-        if(mag_ == nullptr) mag_ = mag_msg;
-        else if(mag_->header.stamp < imu_->header.stamp) mag_ = mag_msg;
+        if(mag_->header.stamp < imu_->header.stamp) mag_ = mag_msg;
         if(mag_->header.stamp == imu_->header.stamp) calc_ekf();
     }
 
