@@ -8,11 +8,11 @@
 
 class ExtKalmanFilter {
 public:
-    ExtKalmanFilter() : {
+    ExtKalmanFilter(){
         // initialization
         previous_timestamp_ = ros::Time::now();
-        imu_->header.stamp = 0;
-        mag_->header.stamp = 0;
+        imu_.header.stamp = previous_timestamp_;
+        mag_.header.stamp = previous_timestamp_;
         myu_observation_ = Eigen::Vector3d::Zero();
         Sigma_observation_ = Eigen::Matrix3d::Identity();
         R_ = Eigen::Matrix3d::Identity() * 0.01;
@@ -26,17 +26,24 @@ public:
 
     // Callback function for IMU data
     void imuCallback(const sensor_msgs::Imu::ConstPtr& imu_msg) {
-        if(imu_->header.stamp < mag_->header.stamp) imu_ = imu_msg;
-        ros::Time current_timestamp = imu_->header.stamp;
-        dt_ = (current_timestamp - previous_timestamp_).toSec();
-        previous_timestamp_ = current_timestamp;
-        if(imu_->header.stamp == mag_->header.stamp) calc_ekf();
+        if(imu_.header.stamp == mag_.header.stamp || imu_.header.stamp < mag_.header.stamp) imu_ = setimu(imu_msg);
+        if(imu_msg->header.stamp == mag_.header.stamp){
+            ros::Time current_timestamp = imu_.header.stamp;
+            dt_ = (current_timestamp - previous_timestamp_).toSec();
+            previous_timestamp_ = current_timestamp;
+            calc_ekf();
+        }
     }
 
     // Callback function for magnetometer data
     void magCallback(const sensor_msgs::MagneticField::ConstPtr& mag_msg) {
-        if(mag_->header.stamp < imu_->header.stamp) mag_ = mag_msg;
-        if(mag_->header.stamp == imu_->header.stamp) calc_ekf();
+        if(mag_.header.stamp == imu_.header.stamp || mag_.header.stamp < imu_.header.stamp) mag_ = setmag(mag_msg);
+        if(mag_msg->header.stamp == imu_.header.stamp){
+            ros::Time current_timestamp = mag_.header.stamp;
+            dt_ = (current_timestamp - previous_timestamp_).toSec();
+            previous_timestamp_ = current_timestamp;
+            calc_ekf();
+        }
     }
 
 private:
@@ -66,10 +73,18 @@ private:
         setimu.linear_acceleration_covariance = imu->linear_acceleration_covariance;
         return setimu;
     }
+
+    sensor_msgs::MagneticField setmag(const sensor_msgs::MagneticField::ConstPtr& mag){
+        sensor_msgs::MagneticField setmag;
+        setmag.header                         = mag->header;
+        setmag.magnetic_field                 = mag->magnetic_field;
+        setmag.magnetic_field_covariance      = mag->magnetic_field_covariance;
+        return setmag;
+    }
     
     void calc_ekf(){
         sensor_msgs::Imu ekfImu;
-        ekfImu = setimu(imu_);
+        ekfImu = imu_;
         Eigen::Matrix3d I = Eigen::Matrix3d::Identity();
         Eigen::Vector3d myu_prediction;
         Eigen::Matrix3d Sigma_prediction;
@@ -81,15 +96,15 @@ private:
         Eigen::Vector3d acceleration;
         Eigen::Vector3d omega;
         Eigen::Vector3d magnetic;
-        acceleration.x() = imu_->linear_acceleration.x;
-        acceleration.y() = imu_->linear_acceleration.y;
-        acceleration.z() = imu_->linear_acceleration.z;
-        omega.x() = imu_->angular_velocity.x;
-        omega.y() = imu_->angular_velocity.y;
-        omega.z() = imu_->angular_velocity.z;
-        magnetic.x() = mag_->magnetic_field.x;
-        magnetic.y() = mag_->magnetic_field.y;
-        magnetic.z() = mag_->magnetic_field.z;
+        acceleration.x() = imu_.linear_acceleration.x;
+        acceleration.y() = imu_.linear_acceleration.y;
+        acceleration.z() = imu_.linear_acceleration.z;
+        omega.x() = imu_.angular_velocity.x;
+        omega.y() = imu_.angular_velocity.y;
+        omega.z() = imu_.angular_velocity.z;
+        magnetic.x() = mag_.magnetic_field.x;
+        magnetic.y() = mag_.magnetic_field.y;
+        magnetic.z() = mag_.magnetic_field.z;
 
         // prediction
         g << 1, tan(myu_observation_.y()) * sin(myu_observation_.x()), tan(myu_observation_.y()) * cos(myu_observation_.x()),
@@ -124,8 +139,8 @@ private:
     ros::Subscriber mag_sub_;
     ros::Publisher imu_pub_;
 
-    sensor_msgs::Imu::ConstPtr imu_;
-    sensor_msgs::MagneticField::ConstPtr mag_;
+    sensor_msgs::Imu imu_;
+    sensor_msgs::MagneticField mag_;
 
     double dt_;
     ros::Time previous_timestamp_;

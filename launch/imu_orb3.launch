@@ -1,0 +1,22 @@
+<!-- <?xml version="1.0" encoding="UTF-8"?> -->
+<launch>
+  <!-- imu use -->
+  <arg name="port" default="/dev/ttyACM0" />
+  <arg name="frame_id" default="imu_link" />
+  <node pkg="rt_usb_9axisimu_driver" type="rt_usb_9axisimu_driver" name="rt_usb_9axisimu_driver" required="true" output="screen">
+    <param name="port" value="$(arg port)" />
+    <param name="frame_id" value="$(arg frame_id)" />
+  </node>
+
+  <!-- robot localization -->
+  <node pkg="scanner" type="ekf_node" name="ekf_node" output="screen">
+    <remap from="/imu_ekf"                      to="/imu0"/>
+  </node>
+
+    <node name="capture_node" pkg="scanner" type="capture_node">
+        <param name="camera_device" value="/dev/video2"/>
+        <remap from="/image_laser" to="/cam0/image_raw"/>
+    </node>
+
+
+</launch>
