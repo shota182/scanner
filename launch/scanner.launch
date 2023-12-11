@@ -1,7 +1,7 @@
 <launch>
-    <arg name="imu" default="true"/>
+    <arg name="imu" default="false"/>
     <arg name="imu_csv" default="false"/>
-    <arg name="cam" default="false"/>
+    <arg name="cam" default="true"/>
     <arg name="node_start_delay" default="3.0" />
 
     <group if="$(arg imu)">
@@ -21,7 +21,11 @@
         <!-- madgwick filter for 9axis imu -->
         <node name="imu_filter_node" pkg="imu_filter_madgwick" type="imu_filter_node">
             <remap from="/imu/data_raw" to="/imu/data_calibrated"/>
-            <!-- <param name="remove_gravity_vector" value="true" /> -->
+            <param name="remove_gravity_vector" value="true" />
+        </node>
+
+        <!-- robot localization -->
+        <node pkg="scanner" type="ekf_node" name="ekf_node" output="screen">
         </node>
 
         <!-- tf from "world" to "odom" about position of imu by integerate acceleration twice -->

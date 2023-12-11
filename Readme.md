@@ -1,5 +1,8 @@
 # 説明
 
+## dtft_imu.py
+    imuトピックをsubscribeして，一定時間でdtftする
+
 ## capture
     <!-- OpenCVで画像を撮影 -->
     生をpublish(デフォ: /image_raw)

@@ -2,7 +2,7 @@
 <launch>
   <!-- imu use -->
   <arg name="port" default="/dev/ttyACM0" />
-  <arg name="frame_id" default="imu_link" />
+  <arg name="frame_id" default="odom" />
   <node pkg="rt_usb_9axisimu_driver" type="rt_usb_9axisimu_driver" name="rt_usb_9axisimu_driver" required="true" output="screen">
     <param name="port" value="$(arg port)" />
     <param name="frame_id" value="$(arg frame_id)" />
@@ -12,6 +12,11 @@
   <node pkg="scanner" type="ekf_node" name="ekf_node" output="screen">
   </node>
 
+  <!-- tf from "world" to "odom" about position of imu by integerate acceleration twice -->
+  <node name="imu_pose_node" pkg="scanner" type="imu_pose_node">
+      <remap from="/imu/data" to="/imu/data_ekf"/>
+  </node>
+
   <!-- rviz -->
-  <node pkg="rviz" type="rviz" name="rviz" args="-d /home/sskr3/catkin_ws/src/scanner/config/imu_ekf.rviz"/>
+  <!-- <node pkg="rviz" type="rviz" name="rviz" args="-d /home/sskr3/catkin_ws/src/scanner/config/imu_ekf.rviz"/> -->
 </launch>

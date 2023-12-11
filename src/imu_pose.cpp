@@ -26,6 +26,7 @@ public:
         frame_id_ = "world";
         child_frame_id_ = "odom"; // cut orientation
         imuPosePub_ = nh_.advertise<sensor_msgs::Imu>("/imu/data_odom", 1);
+        imuGcutPub_ = nh_.advertise<sensor_msgs::Imu>("/imu/data_cutg", 1);
         imuVeloPub_ = nh_.advertise<geometry_msgs::Twist>("/imu/velocity", 1);
     }
 
@@ -48,16 +49,27 @@ public:
         poseImu.linear_acceleration.z = accel.z();
         poseImu.angular_velocity = imu_msg->angular_velocity;
 
+        // cut gravity
+        sensor_msgs::Imu cutgImu = poseImu;
+        Eigen::Vector3d acceleration = orientation_ * accel; // convert from acceleration(odom) to acceleration(world)
+        cutgImu.linear_acceleration.x = acceleration.x();
+        cutgImu.linear_acceleration.y = acceleration.y();
+        cutgImu.linear_acceleration.z = acceleration.z() += g_;
+
 
         geometry_msgs::Twist velocity_msg;
         velocity_msg.linear.x = velocity_.x();
         velocity_msg.linear.y = velocity_.y();
         velocity_msg.linear.z = velocity_.z();
-        velocity_msg.angular.x = -accel.x();
-        velocity_msg.angular.y = -accel.y();
-        velocity_msg.angular.z = -accel.z();
+        // velocity_msg.angular.x = -accel.x();
+        // velocity_msg.angular.y = -accel.y();
+        // velocity_msg.angular.z = -accel.z();
+        velocity_msg.angular.x = accel.x();
+        velocity_msg.angular.y = accel.y();
+        velocity_msg.angular.z = accel.z();
         
         imuPosePub_.publish(poseImu);
+        imuGcutPub_.publish(poseImu);
         imuVeloPub_.publish(velocity_msg);
 
         // Calculate displacement using double integration
@@ -125,7 +137,7 @@ private:
         Eigen::Vector3d acceleration_imu_link(linear_acceleration.x, linear_acceleration.y, linear_acceleration.z); // odom
         Eigen::Matrix3d rotation_matrix = orientation_.toRotationMatrix(); // odom -> imu_link
         Eigen::Vector3d acceleration = orientation_ * acceleration_imu_link; // convert from acceleration(odom) to acceleration(world)
-        acceleration = -acceleration;
+        // acceleration = -acceleration;
         acceleration.z() += g_; // cut gravity
         // Double integration: v = u + at, s = ut + 0.5at^2
         velocity_ += acceleration * dt; // Update velocity(world)
@@ -168,6 +180,7 @@ private:
     ros::NodeHandle nh_;
     ros::Subscriber imu_subscriber_;
     ros::Publisher imuPosePub_;
+    ros::Publisher imuGcutPub_;
     ros::Publisher imuVeloPub_;
     tf2_ros::TransformBroadcaster tf_broadcaster_;
 

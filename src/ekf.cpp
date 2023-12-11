@@ -15,8 +15,10 @@ public:
         mag_.header.stamp = previous_timestamp_;
         myu_observation_ = Eigen::Vector3d::Zero();
         Sigma_observation_ = Eigen::Matrix3d::Identity();
-        R_ = Eigen::Matrix3d::Identity() * 0.01;
-        Q_ = Eigen::Matrix3d::Identity() * 0.1;
+        // R_ = Eigen::Matrix3d::Identity() * 0.01;
+        // Q_ = Eigen::Matrix3d::Identity() * 0.1;
+        R_ = Eigen::Matrix3d::Identity() * 0.02955356570015007;
+        Q_ = Eigen::Matrix3d::Identity() * 0.17503487119062797;
 
         ros::NodeHandle nh("~");
         imu_sub_ = nh.subscribe("/imu/data_raw", 10, &ExtKalmanFilter::imuCallback, this);
@@ -150,6 +152,8 @@ private:
 
     Eigen::Matrix3d R_; // prediction error
     Eigen::Matrix3d Q_; // observation error
+
+    bool remove_gravity = true;
 
     // YAML::Node config = YAML::LoadFile("/home/sskr3/catkin_ws/src/scanner/config/imu.yaml"); // param from imu.yaml
     // YAML::Node Acceleration = config["acceleration"]; // acceleration param
