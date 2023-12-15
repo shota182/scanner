@@ -28,6 +28,7 @@ public:
 
     // Callback function for IMU data
     void imuCallback(const sensor_msgs::Imu::ConstPtr& imu_msg) {
+
         if(imu_.header.stamp == mag_.header.stamp || imu_.header.stamp < mag_.header.stamp) imu_ = setimu(imu_msg);
         if(imu_msg->header.stamp == mag_.header.stamp){
             ros::Time current_timestamp = imu_.header.stamp;

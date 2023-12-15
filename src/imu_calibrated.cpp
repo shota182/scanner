@@ -9,14 +9,20 @@ public:
         ros::NodeHandle nh("~");
         imuRawSub = nh.subscribe("/imu/data_raw", 1, &ImuCalibrationNode::imuRawCallback, this);
         imuCalibratedPub = nh.advertise<sensor_msgs::Imu>("/imu/data_calibrated", 1);
+        vinsimu_pub_ = nh.advertise<sensor_msgs::Imu>("/imu/data_calibrated_vins", 1);
     }
 
     void imuRawCallback(const sensor_msgs::Imu::ConstPtr& msg) {
         // データをキャリブレーション
         sensor_msgs::Imu calibratedImu = calibrateImu(msg);
-
         // キャリブレーション後のデータをpublish
         imuCalibratedPub.publish(calibratedImu);
+
+        // 角速度をrad/sに変換
+        calibratedImu.angular_velocity.x *= DEG_TO_RAD;
+        calibratedImu.angular_velocity.y *= DEG_TO_RAD;
+        calibratedImu.angular_velocity.z *= DEG_TO_RAD;
+        vinsimu_pub_.publish(calibratedImu);
     }
 
 private:
@@ -27,9 +33,9 @@ private:
         calibratedImu.angular_velocity_covariance = rawImu->angular_velocity_covariance;
         calibratedImu.linear_acceleration_covariance = rawImu->linear_acceleration_covariance;
 
-        calibratedImu.linear_acceleration.x = (rawImu->linear_acceleration.x - accel_e0x_) / (1 + accel_e1x_);
-        calibratedImu.linear_acceleration.y = (rawImu->linear_acceleration.y - accel_e0y_) / (1 + accel_e1y_);
-        calibratedImu.linear_acceleration.z = (rawImu->linear_acceleration.z - accel_e0z_) / (1 + accel_e1z_);
+        calibratedImu.linear_acceleration.x = (rawImu->linear_acceleration.x + accel_e0x_) / (1 + accel_e1x_);
+        calibratedImu.linear_acceleration.y = (rawImu->linear_acceleration.y + accel_e0y_) / (1 + accel_e1y_);
+        calibratedImu.linear_acceleration.z = (rawImu->linear_acceleration.z + accel_e0z_) / (1 + accel_e1z_);
         calibratedImu.angular_velocity.x = rawImu->angular_velocity.x - angle_e0x_;
         calibratedImu.angular_velocity.y = rawImu->angular_velocity.y - angle_e0y_;
         calibratedImu.angular_velocity.z = rawImu->angular_velocity.z - angle_e0z_;
@@ -39,6 +45,7 @@ private:
     ros::NodeHandle nh_;
     ros::Subscriber imuRawSub;
     ros::Publisher imuCalibratedPub;
+    ros::Publisher vinsimu_pub_;
 
     YAML::Node config = YAML::LoadFile("/home/sskr3/catkin_ws/src/scanner/config/imu.yaml"); // param from imu.yaml
     YAML::Node Acceleration = config["acceleration"]; // acceleration param
@@ -52,6 +59,7 @@ private:
     double angle_e0x_ = Angular_velocity["e0"]["x"].as<double>();
     double angle_e0y_ = Angular_velocity["e0"]["y"].as<double>();
     double angle_e0z_ = Angular_velocity["e0"]["z"].as<double>();
+    const double DEG_TO_RAD = M_PI / 180.0;  // 度からラジアンへの変換係数
 
 };
 

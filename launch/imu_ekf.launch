@@ -8,6 +8,11 @@
     <param name="frame_id" value="$(arg frame_id)" />
   </node>
 
+  <!-- publish calibrated imu data -->
+  <node name="imu_calibrated_node" pkg="scanner" type="imu_calibrated_node">
+      <remap from="/imu/data_calibrated" to="/imu/data_calib"/>
+  </node>
+
   <!-- robot localization -->
   <node pkg="scanner" type="ekf_node" name="ekf_node" output="screen">
   </node>
